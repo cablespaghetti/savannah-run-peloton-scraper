@@ -1,36 +1,37 @@
 import csv
 import datetime
+import os
 
 import requests
 
 API_BASE = 'https://api.onepeloton.co.uk/api/'
-COOKIE = '584455b4a61846988936ee504407f2fd'
+COOKIE = os.getenv('PELOTON_SESSION_ID')
 CHALLENGE_START = datetime.datetime(2021, 11, 22, 0, 0)
 USER_DICT = {
-        '32df2a456cd94a77bbf3a6c32af6cb26': 'Nicki_Cycology',
-        '945ba7f2f9144c45b6c2c74c748f107b': 'irish_claire',
-        'f9761e7da1cd4eb8a7549fecf92598d6': 'lockandloaded',
-        'e7336ba47aca45d2a2be42ea9faf8c35': 'CruellaDeSpin',
-        '925f924297934aabba1f738bd9d89522': 'pastheicecream',
-        '560ef299756044cda5e50ccad8d5f89c': 'PhilH79',
-        'ac540877948e4a7e8149d5abd87bc6ce': 'GingerNut1',
-        '530639823f514afd98cb309d6d82e116': 'WeMoveTogether',  # 2 activites in 6
-        'a241748577e241e597d36630f97f06ea': 'CrystalMet',
-        '8b09d1313f04427a9bcdf51bb5ef0799': 'Kay_UK',
-        '6d5ad73229334f08805579790f755516': 'allycatty',
-        'e56af6663ccc4bc6b6417e3079fa074a': 'Charlie_73',  # 2 activities in 6
-        '5f92c512d89b4e9ab4d8a3c074198b88': 'louise12112',
-        'ad3f1733b146487abef1d7375873e661': 'Twinmum23',
-        '346a716b00b44069b83d67f5cdf64aad': 'Natt82',
-        '814d84035a694053a337829c108826e6': 'Julesymc22',
-        '85a87f4d37014a8596f577e2b531dc0d': 'Wupsadaisy',
-        'a84860ef1cb6412882a1d12f0bdb133b': 'JacTay',
-        'cfbe2ff87f904ecbb7f7721152c27a18': 'GinaUK',  # 2/3 week 6
-        'ab4dd8ba84fd483c8ab05bc24b722c74': 'what_katy_did',
-        '649caab816b54321b3e200b2f993921f': 's5stw',
-        'f3a75d4cc8f34ed5812cb6ca9a63b50c': 'taz520',
-        'ade268b8be814472aaa591ced1bf6941': 'careskell'
-    }
+    '32df2a456cd94a77bbf3a6c32af6cb26': 'Nicki_Cycology',
+    '945ba7f2f9144c45b6c2c74c748f107b': 'irish_claire',
+    'f9761e7da1cd4eb8a7549fecf92598d6': 'lockandloaded',
+    'e7336ba47aca45d2a2be42ea9faf8c35': 'CruellaDeSpin',
+    '925f924297934aabba1f738bd9d89522': 'pastheicecream',
+    '560ef299756044cda5e50ccad8d5f89c': 'PhilH79',
+    'ac540877948e4a7e8149d5abd87bc6ce': 'GingerNut1',
+    '530639823f514afd98cb309d6d82e116': 'WeMoveTogether',  # 2 activites in 6
+    'a241748577e241e597d36630f97f06ea': 'CrystalMet',
+    '8b09d1313f04427a9bcdf51bb5ef0799': 'Kay_UK',
+    '6d5ad73229334f08805579790f755516': 'allycatty',
+    'e56af6663ccc4bc6b6417e3079fa074a': 'Charlie_73',  # 2 activities in 6
+    '5f92c512d89b4e9ab4d8a3c074198b88': 'louise12112',
+    'ad3f1733b146487abef1d7375873e661': 'Twinmum23',
+    '346a716b00b44069b83d67f5cdf64aad': 'Natt82',
+    '814d84035a694053a337829c108826e6': 'Julesymc22',
+    '85a87f4d37014a8596f577e2b531dc0d': 'Wupsadaisy',
+    'a84860ef1cb6412882a1d12f0bdb133b': 'JacTay',
+    'cfbe2ff87f904ecbb7f7721152c27a18': 'GinaUK',  # 2/3 week 6
+    'ab4dd8ba84fd483c8ab05bc24b722c74': 'what_katy_did',
+    '649caab816b54321b3e200b2f993921f': 's5stw',
+    'f3a75d4cc8f34ed5812cb6ca9a63b50c': 'taz520',
+    'ade268b8be814472aaa591ced1bf6941': 'careskell'
+}
 RUN_DICT = {
     1: {
         'start': datetime.datetime(2021, 11, 22, 0, 0),
