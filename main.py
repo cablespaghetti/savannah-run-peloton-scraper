@@ -8,6 +8,7 @@ API_BASE = 'https://api.onepeloton.co.uk/api/'
 COOKIE = os.getenv('PELOTON_SESSION_ID')
 CHALLENGE_START = datetime.datetime(2021, 11, 22, 0, 0)
 USER_DICT = {
+    'ac540877948e4a7e8149d5abd87bc6ce': 'GingerNut1',
     '32df2a456cd94a77bbf3a6c32af6cb26': 'Nicki_Cycology',
     '945ba7f2f9144c45b6c2c74c748f107b': 'irish_claire',
     'c90e078b1ae442d4a7b827ae4dce7a62': 'beingmybestself',
@@ -22,7 +23,6 @@ USER_DICT = {
     'e7336ba47aca45d2a2be42ea9faf8c35': 'CruellaDeSpin',
     '925f924297934aabba1f738bd9d89522': 'pastheicecream',
     '560ef299756044cda5e50ccad8d5f89c': 'PhilH79',
-    'ac540877948e4a7e8149d5abd87bc6ce': 'GingerNut1',
     '530639823f514afd98cb309d6d82e116': 'WeMoveTogether',
     'f953affc0d68461cbb2fa0c2b3187aab': 'littlesid1',
     'a241748577e241e597d36630f97f06ea': 'CrystalMet',
@@ -185,7 +185,24 @@ def get_total_distance(user_id, user_name):
             print(f'WARNING: User {user_name} did {len(run_week_activities)} in week {run_week}')
             completed_challenge = False
         elif len(run_week_activities) > 3:
-            print(f'WARNING: User {user_name} did {len(run_week_activities)} in week {run_week}')
+            # Nasty hack to try and account for people doing both optional endurance runs
+            if len(RUN_DICT[run_week]['runs']) == 4:
+                longest_endurance_id = ""
+                run_week_activities_temp_copy = run_week_activities.copy()
+                for activity_class_id, distance in run_week_activities_temp_copy.items():
+                    if "endurance" in RUN_DICT[run_week]['runs'][activity_class_id]:
+                        if longest_endurance_id and distance > run_week_activities_temp_copy[longest_endurance_id]:
+                            run_week_activities.pop(longest_endurance_id)
+                            longest_endurance_id = activity_class_id
+                            print(f"Removing optional activity for {user_name} because another is longer")
+                        elif longest_endurance_id:
+                            run_week_activities.pop(activity_class_id)
+                            print(f"Removing optional activity for {user_name} because another is longer")
+                        else:
+                            longest_endurance_id = activity_class_id
+            if len(run_week_activities) > 3:
+                print(f"WARNING: User {user_name} did {len(run_week_activities)} in week {run_week} and couldn't reconcile")
+
     return distance_total, pr_counter, completed_challenge, total_run_counter
 
 
