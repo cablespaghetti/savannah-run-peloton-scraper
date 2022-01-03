@@ -167,9 +167,7 @@ def get_total_distance(user_id, user_name):
             print(f'WARNING: User {user_name} did {len(run_week_activities)} in week {run_week}')
             completed_challenge = False
         elif len(run_week_activities) > 3:
-            run_week_activities.keys()
             print(f'WARNING: User {user_name} did {len(run_week_activities)} in week {run_week}')
-
     return distance_total, pr_counter, completed_challenge, total_run_counter
 
 
@@ -218,7 +216,8 @@ if __name__ == '__main__':
                     'Completed Challenge': completed_challenge
                 }
             )
-            print(f"User {user_name} did not complete the challenge but distance was {round(user_distance, 2)}Mi")
+            if not completed_challenge:
+                print(f"User {user_name} did not complete the challenge but distance was {round(user_distance, 2)}Mi")
             total_challenge_distance += user_distance
             total_challenge_runs += total_runs
     print(f"Total Challenge Distance was {total_challenge_distance}Mi")
