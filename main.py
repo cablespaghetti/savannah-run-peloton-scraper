@@ -329,7 +329,7 @@ if __name__ == '__main__':
                     'Max Speed (MPH)': user_metrics['max_speed'],
                     'Average Speed (MPH)': round(user_metrics['average_speed'], 2),
                     'Total Output (kJ)': user_metrics['output'],
-                    'Average Output (Watts)': round(user_metrics['average_output'], 0),
+                    'Average Output (Watts)': int(user_metrics['average_output']),
                     'PRs': user_metrics['prs'],
                     'Completed Challenge': user_metrics['completed']
                 }
