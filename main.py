@@ -307,10 +307,10 @@ if __name__ == '__main__':
             'Distance (Miles)',
             'Duration',
             'Calories',
-            'Max Speed',
-            'Average Speed',
-            'Total Output',
-            'Average Output',
+            'Max Speed (MPH)',
+            'Average Speed (MPH)',
+            'Total Output (kJ)',
+            'Average Output (Watts)',
             'PRs',
             'Completed Challenge'
         ]
@@ -326,10 +326,10 @@ if __name__ == '__main__':
                     'Distance (Miles)': round(user_metrics['distance'], 2),
                     'Duration': format_duration(user_metrics['duration']),
                     'Calories': user_metrics['calories'],
-                    'Max Speed': user_metrics['max_speed'],
-                    'Average Speed': user_metrics['average_speed'],
-                    'Total Output': user_metrics['output'],
-                    'Average Output': user_metrics['average_output'],
+                    'Max Speed (MPH)': user_metrics['max_speed'],
+                    'Average Speed (MPH)': round(user_metrics['average_speed'], 2),
+                    'Total Output (kJ)': user_metrics['output'],
+                    'Average Output (Watts)': round(user_metrics['average_output'], 0),
                     'PRs': user_metrics['prs'],
                     'Completed Challenge': user_metrics['completed']
                 }
