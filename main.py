@@ -147,7 +147,12 @@ def get_metrics_for_user(user_id, user_name):
         'prs': 0,
         'completed': True,
         'runs': 0,
-        'duration': 0
+        'duration': 0,
+        'calories': 0,
+        'output': 0,
+        'max_speed': 0,
+        'average_output': 0,
+        'average_speed': 0
     }
     for activity in user_activities:
         if activity['metrics_type'] != 'running' and activity['status'] != 'COMPLETE':
@@ -160,24 +165,24 @@ def get_metrics_for_user(user_id, user_name):
             if run_week_dict['start'] < activity_time < run_week_dict['end']:
                 if activity_class_id in run_week_dict['runs'].keys():
                     activity_metrics_dict = get_metrics_for_activity(activity)
-                    if 'distance' in activity_metrics_dict:
-                        distance = activity_metrics_dict['distance']
-                    else:
-                        distance = 0
-
+                    distance = activity_metrics_dict['distance']
                     print(
                         f"Found matching activity for {user_name} - Week {run_week} - {run_week_dict['runs'][activity_class_id]} - {distance}Mi")
 
                     # Deal with people doing the same run twice
                     if activity_class_id in run_week_counter_dict[run_week]:
                         print(f"Found multiple attempts for {run_week_dict['runs'][activity_class_id]}")
-                        if run_week_counter_dict[run_week][activity_class_id] > distance:
+                        if run_week_counter_dict[run_week][activity_class_id]['distance'] > distance:
                             print(f"This one is shorter, ignoring")
                             break
                         else:
                             print(f"This one is longer, overwriting")
-                            user_metric_dict['distance'] -= run_week_counter_dict[run_week][activity_class_id]
+                            user_metric_dict['distance'] -= run_week_counter_dict[run_week][activity_class_id][
+                                'distance']
                             user_metric_dict['duration'] -= activity_duration
+                            user_metric_dict['calories'] -= run_week_counter_dict[run_week][activity_class_id][
+                                'calories']
+                            user_metric_dict['output'] -= run_week_counter_dict[run_week][activity_class_id]['output']
                             user_metric_dict['runs'] -= 1
 
                     if is_activity_pr(activity):
@@ -186,7 +191,19 @@ def get_metrics_for_user(user_id, user_name):
 
                     user_metric_dict['distance'] += distance
                     user_metric_dict['duration'] += activity_duration
-                    run_week_counter_dict[run_week][activity_class_id] = distance
+                    user_metric_dict['calories'] += activity_metrics_dict['calories']
+                    user_metric_dict['output'] += activity_metrics_dict['output']
+
+                    # This could include overwritten runs max speed. Whole process needs a refactor.
+                    if user_metric_dict['max_speed'] < activity_metrics_dict['max_speed']:
+                        user_metric_dict['max_speed'] = activity_metrics_dict['max_speed']
+
+                    run_week_counter_dict[run_week][activity_class_id] = {
+                        'distance': distance,
+                        'calories': activity_metrics_dict['calories'],
+                        'output': activity_metrics_dict['output']
+                    }
+
                     user_metric_dict['runs'] += 1
                 break
 
@@ -200,9 +217,10 @@ def get_metrics_for_user(user_id, user_name):
             if len(RUN_DICT[run_week]['runs']) == 4:
                 longest_endurance_id = ""
                 run_week_activities_temp_copy = run_week_activities.copy()
-                for activity_class_id, distance in run_week_activities_temp_copy.items():
+                for activity_class_id, metrics in run_week_activities_temp_copy.items():
                     if "endurance" in RUN_DICT[run_week]['runs'][activity_class_id]:
-                        if longest_endurance_id and distance > run_week_activities_temp_copy[longest_endurance_id]:
+                        if longest_endurance_id and metrics['distance'] > \
+                                run_week_activities_temp_copy[longest_endurance_id]['distance']:
                             run_week_activities.pop(longest_endurance_id)
                             longest_endurance_id = activity_class_id
                             print(f"Removing optional activity for {user_name} because another is longer")
@@ -212,8 +230,12 @@ def get_metrics_for_user(user_id, user_name):
                         else:
                             longest_endurance_id = activity_class_id
             if len(run_week_activities) > 3:
-                print(f"WARNING: User {user_name} did {len(run_week_activities)} in week {run_week} and couldn't reconcile")
+                print(
+                    f"WARNING: User {user_name} did {len(run_week_activities)} in week {run_week} and couldn't reconcile")
 
+    if user_metric_dict['duration']:
+        user_metric_dict['average_output'] = 1000 * (user_metric_dict['output'] / user_metric_dict['duration'])
+        user_metric_dict['average_speed'] = user_metric_dict['distance'] / (user_metric_dict['duration'] / 3600)
     return user_metric_dict
 
 
@@ -223,7 +245,12 @@ def get_metrics_for_activity(activity):
         cookies={'peloton_session_id': COOKIE}
     )
     distance_response_object = distance_response.json()
-    metric_return_dict = {}
+    metric_return_dict = {
+        'distance': 0,
+        'calories': 0,
+        'output': 0,
+        'max_speed': 0
+    }
     for distance_response_summary in distance_response_object['summaries']:
         # Total distance in Miles
         if distance_response_summary['slug'] == 'distance':
@@ -271,29 +298,54 @@ if __name__ == '__main__':
     total_challenge_distance = 0
     total_challenge_runs = 0
     total_challenge_duration = 0
+    total_challenge_output = 0
+    total_challenge_calories = 0
     with open('savannah_run.csv', 'w', newline='') as csv_file:
-        fieldnames = ['Username', 'Runs', 'Distance (Miles)', 'Duration', 'PRs', 'Completed Challenge']
+        fieldnames = [
+            'Username',
+            'Runs',
+            'Distance (Miles)',
+            'Duration',
+            'Calories',
+            'Max Speed',
+            'Average Speed',
+            'Total Output',
+            'Average Output',
+            'PRs',
+            'Completed Challenge'
+        ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='unix')
         writer.writeheader()
         for user_id, user_name in USER_DICT.items():
             user_metrics = get_metrics_for_user(user_id, user_name)
-            print(f"Total distance for {user_name} is {round(user_metrics['distance'], 2)}Mi - They got {user_metrics['prs']} PRs - Duration {format_duration(user_metrics['duration'])}")
+            print(f"Total distance for {user_name} is {round(user_metrics['distance'], 2)}Mi")
             writer.writerow(
                 {
                     'Username': user_name,
                     'Runs': user_metrics['runs'],
                     'Distance (Miles)': round(user_metrics['distance'], 2),
                     'Duration': format_duration(user_metrics['duration']),
+                    'Calories': user_metrics['calories'],
+                    'Max Speed': user_metrics['max_speed'],
+                    'Average Speed': user_metrics['average_speed'],
+                    'Total Output': user_metrics['output'],
+                    'Average Output': user_metrics['average_output'],
                     'PRs': user_metrics['prs'],
                     'Completed Challenge': user_metrics['completed']
                 }
             )
             if not user_metrics['completed']:
-                print(f"User {user_name} did not complete the challenge but distance was {round(user_metrics['distance'], 2)}Mi")
+                print(
+                    f"User {user_name} did not complete the challenge but distance was {round(user_metrics['distance'], 2)}Mi")
             total_challenge_distance += user_metrics['distance']
             total_challenge_runs += user_metrics['runs']
             total_challenge_duration += user_metrics['duration']
+            total_challenge_output += user_metrics['output']
+            total_challenge_calories += user_metrics['calories']
 
-    print(f"Total Challenge Distance was {total_challenge_distance}Mi")
+    print(f"Total Challenge Signups: {len(USER_DICT)}")
     print(f"Total Challenge Runs was {total_challenge_runs}")
+    print(f"Total Challenge Distance was {total_challenge_distance}Mi")
+    print(f"Total Challenge Output was {total_challenge_output}kJ")
+    print(f"Total Challenge Calorie Burn was {total_challenge_calories}kCal")
     print(f"Total Challenge Duration was {format_duration(total_challenge_duration)}")
