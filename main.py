@@ -137,6 +137,7 @@ def get_total_distance(user_id, user_name):
     distance_total = 0
     pr_counter = 0
     total_run_counter = 0
+    duration_total = 0
     run_week_counter_dict = {
         1: {},
         2: {},
@@ -149,6 +150,7 @@ def get_total_distance(user_id, user_name):
         if activity['metrics_type'] != 'running' and activity['status'] != 'COMPLETE':
             continue
         activity_class_id = activity['ride']['id']
+        activity_duration = activity['ride']['duration']
         activity_time = datetime.datetime.utcfromtimestamp(activity['start_time'])
 
         for run_week, run_week_dict in RUN_DICT.items():
@@ -168,6 +170,7 @@ def get_total_distance(user_id, user_name):
                         else:
                             print(f"This one is longer, overwriting")
                             distance_total -= run_week_counter_dict[run_week][activity_class_id]
+                            duration_total -= activity_duration
                             total_run_counter -= 1
 
                     if is_activity_pr(activity):
@@ -175,6 +178,7 @@ def get_total_distance(user_id, user_name):
                         pr_counter += 1
 
                     distance_total += distance
+                    duration_total += activity_duration
                     run_week_counter_dict[run_week][activity_class_id] = distance
                     total_run_counter += 1
                 break
@@ -203,7 +207,7 @@ def get_total_distance(user_id, user_name):
             if len(run_week_activities) > 3:
                 print(f"WARNING: User {user_name} did {len(run_week_activities)} in week {run_week} and couldn't reconcile")
 
-    return distance_total, pr_counter, completed_challenge, total_run_counter
+    return distance_total, pr_counter, completed_challenge, total_run_counter, duration_total
 
 
 def get_distance_for_activity(activity):
@@ -232,21 +236,29 @@ def is_activity_pr(activity):
 
     return False
 
+def format_duration(seconds):
+    min, sec = divmod(seconds, 60)
+    hour, min = divmod(min, 60)
+    return "%d:%02d" % (hour, min)
+
 
 if __name__ == '__main__':
     total_challenge_distance = 0
     total_challenge_runs = 0
+    total_challenge_duration = 0
     with open('savannah_run.csv', 'w', newline='') as csv_file:
-        fieldnames = ['Username', 'Distance (Miles)', 'PRs', 'Completed Challenge']
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        fieldnames = ['Username', 'Runs', 'Distance (Miles)', 'Duration', 'PRs', 'Completed Challenge']
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='unix')
         writer.writeheader()
         for user_id, user_name in USER_DICT.items():
-            user_distance, user_prs, completed_challenge, total_runs = get_total_distance(user_id, user_name)
-            print(f"Total distance for {user_name} is {round(user_distance, 2)}Mi - They got {user_prs} PRs")
+            user_distance, user_prs, completed_challenge, total_runs, user_duration = get_total_distance(user_id, user_name)
+            print(f"Total distance for {user_name} is {round(user_distance, 2)}Mi - They got {user_prs} PRs - Duration {format_duration(user_duration)}")
             writer.writerow(
                 {
                     'Username': user_name,
+                    'Runs': total_runs,
                     'Distance (Miles)': round(user_distance, 2),
+                    'Duration': format_duration(user_duration),
                     'PRs': user_prs,
                     'Completed Challenge': completed_challenge
                 }
@@ -255,5 +267,8 @@ if __name__ == '__main__':
                 print(f"User {user_name} did not complete the challenge but distance was {round(user_distance, 2)}Mi")
             total_challenge_distance += user_distance
             total_challenge_runs += total_runs
+            total_challenge_duration += user_duration
+
     print(f"Total Challenge Distance was {total_challenge_distance}Mi")
     print(f"Total Challenge Runs was {total_challenge_runs}")
+    print(f"Total Challenge Duration was {format_duration(total_challenge_duration)}")
